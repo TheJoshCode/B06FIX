@@ -1,9 +1,3 @@
-# **Call Of Duty Service Installer Script**
-
-This script installs a system service for the "Call Of Duty" game, specifically targeting the "randgrid.sys" file within the game folder. It also checks for the existence of the required files and directories before proceeding with the installation.
-
----
-
 ## **Requirements**
 - **Administrator privileges** are required to run this script.
 - The script will search for the **"Call Of Duty"** folder and the **"Content"** subfolder.

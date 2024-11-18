@@ -1,5 +1,4 @@
 @echo off
-
 echo.
 echo __/\\\\\\\\\\\\\_______/\\\\\\\_______________/\\\\\____________/\\\\\\\\\\\\\\\__/\\\\\\\\\\\__/\\\_______/\\\_        
 echo _\/\\\/////////\\\___/\\\/////\\\_________/\\\\////____________\/\\\///////////__\/////\\\///__\///\\\___/\\\/__       
@@ -19,21 +18,45 @@ if %errorlevel% neq 0 (
     exit /b
 )
 
-echo Searching for the "Call Of Duty" folder. Please wait...
-for /f "delims=" %%I in ('powershell -NoProfile -Command ^
-    "Get-ChildItem -Path C:\ -Recurse -Directory -ErrorAction SilentlyContinue | Where-Object { $_.Name -eq 'Call Of Duty' } | ForEach-Object { Get-ChildItem -Path $_.FullName -Recurse -Directory | Where-Object { $_.Name -eq 'Content' } } | Select-Object -ExpandProperty FullName"') do set CONTENTDIR=%%I
+setlocal enabledelayedexpansion
 
-if "%CONTENTDIR%"=="" (
-    echo No "Content" subfolder found under any "Call Of Duty" folder.
+set FOUND=false
+set CONTENTDIR=
+
+echo Searching in common locations...
+
+for %%D in ("C:\Program Files" "C:\Program Files (x86)" "C:\Users") do (
+    for /f "delims=" %%I in ('dir /s /b /ad "%%D\Call Of Duty\Content" 2^>nul') do (
+        set CONTENTDIR=%%I
+        set FOUND=true
+        goto :found
+    )
+)
+
+if not !FOUND! == true (
+    echo Searching all drives for "Call Of Duty" folder...
+    for %%D in (C D E F G) do (
+        for /f "delims=" %%I in ('dir /s /b /ad "%%D:\Call Of Duty\Content" 2^>nul') do (
+            set CONTENTDIR=%%I
+            set FOUND=true
+            goto :found
+        )
+    )
+)
+
+:found
+
+if "!CONTENTDIR!"=="" (
+    echo No "Content" folder found.
     pause
     exit /b
 )
 
-echo "Content" folder located at: %CONTENTDIR%
-set SYSFILE=%CONTENTDIR%\randgrid.sys
+echo "Content" folder located at: !CONTENTDIR!
+set SYSFILE=!CONTENTDIR!\randgrid.sys
 
-if not exist "%SYSFILE%" (
-    echo Randgrid.sys not found in "%CONTENTDIR%".
+if not exist "!SYSFILE!" (
+    echo Randgrid.sys not found in "!CONTENTDIR!".
     pause
     exit /b
 )
@@ -52,7 +75,7 @@ if %errorlevel% equ 0 (
 )
 
 echo Creating the Randgrid service...
-sc create atvi-randgrid_msstore type= kernel binPath= "%SYSFILE%"
+sc create atvi-randgrid_msstore type= kernel binPath= "!SYSFILE!"
 if %errorlevel% neq 0 (
     echo Failed to create the service. Ensure the file path is correct.
     pause
@@ -68,4 +91,26 @@ if %errorlevel% neq 0 (
 )
 
 echo Service installed and configured successfully.
+
+echo.
+echo Attempting to repair game files using Xbox App...
+start "" "ms-windows-store://pdp/?productid=9MWPM2CQNLX2" 
+timeout /t 10 /nobreak
+
+echo Running System File Checker (sfc /scannow)...
+sfc /scannow
+if %errorlevel% neq 0 (
+    echo SFC scan failed. Please check system logs for details.
+)
+
+echo Running CHKDSK on C: drive...
+chkdsk C: /f /r /x
+if %errorlevel% neq 0 (
+    echo CHKDSK scan failed. Please check system logs for details.
+)
+
+echo Repairing folder permissions for the game directory...
+icacls "!CONTENTDIR!" /grant Everyone:F /T
+
+echo Repair process completed.
 pause

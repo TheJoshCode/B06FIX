@@ -1,7 +1,5 @@
 ## **Requirements**
 - **Administrator privileges** are required to run this script.
-- The script will search for the **"Call Of Duty"** folder and the **"Content"** subfolder.
-- Ensure that **randgrid.sys** exists within the **"Content"** folder.
 
 ---
 
